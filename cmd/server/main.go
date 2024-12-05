@@ -26,6 +26,7 @@ func main() {
 
 	logKey := fmt.Sprintf("%s.%s", routing.GameLogSlug, "*")
 	_, _, err = pubsub.DeclareAndBind(connection, routing.ExchangePerilTopic, routing.GameLogSlug, logKey, pubsub.Durable)
+
 	if err != nil {
 		log.Fatal("Could not declare and bind log queue")
 	}
@@ -43,7 +44,7 @@ func main() {
 				routing.ExchangePerilDirect,
 				routing.PauseKey,
 				routing.PlayingState{
-					IsPaused: false,
+					IsPaused: true,
 				})
 			if err != nil {
 				log.Printf("Could not publish: %v", err)

@@ -44,7 +44,7 @@ func main() {
 		case "spawn":
 			err := gameState.CommandSpawn(words)
 			if err != nil {
-				fmt.Println("Spawn was unsccessful")
+				fmt.Println("Spawn was unsuccessful")
 			}
 		case "move":
 			_, err := gameState.CommandMove(words)

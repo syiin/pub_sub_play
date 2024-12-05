@@ -1,6 +1,7 @@
 package pubsub
 
 import "context"
+import "fmt"
 import "encoding/json"
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -30,11 +31,17 @@ func SubscribeJSON[T any](
 		key,
 		simpleQueueType,
 	)
+	if err != nil {
+		fmt.Println("Channel not opened")
+	}
 	deliveryChan, err := channel.Consume(queueName, "", false, false, false, false, nil)
+	if err != nil {
+		fmt.Println("Delivery channel cannot be opened")
+	}
 	go func() {
 		for msg := range deliveryChan {
 			var unmarshalled T
-			json.Unmarshal(msg.Body, unmarshalled)
+			json.Unmarshal(msg.Body, &unmarshalled)
 			handler(unmarshalled)
 			msg.Ack(false)
 		}
