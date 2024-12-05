@@ -26,6 +26,14 @@ func main() {
 	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, pauseQueueName, routing.PauseKey, pubsub.Transient)
 
 	gameState := gamelogic.NewGameState(username)
+	pubsub.SubscribeJSON(
+		connection,
+		routing.ExchangePerilDirect,
+		pauseQueueName,
+		routing.PauseKey,
+		pubsub.Transient,
+		handlerPause(gameState),
+	)
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
@@ -57,4 +65,10 @@ func main() {
 	// signalChan := make(chan os.Signal, 1)
 	// signal.Notify(signalChan, os.Interrupt)
 	// <-signalChan
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	defer fmt.Println(">")
+	return gs.HandlePause
+
 }
