@@ -27,12 +27,12 @@ func DeclareAndBind(
 
 	switch simpleQueueType {
 	case Durable:
-		fmt.Println("Durable...")
+		log.Println("Durable...")
 		durable = true
 		autoDelete = false
 		exclusive = false
 	case Transient:
-		fmt.Println("Transient...")
+		log.Println("Transient...")
 		durable = false
 		autoDelete = true
 		exclusive = true

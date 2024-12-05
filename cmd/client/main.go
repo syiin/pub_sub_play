@@ -22,8 +22,8 @@ func main() {
 	username, err := gamelogic.ClientWelcome()
 
 	// Create and bind queue
-	queueName := fmt.Sprintf("%s.%s", routing.PauseKey, username)
-	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, queueName, routing.PauseKey, pubsub.Transient)
+	pauseQueueName := fmt.Sprintf("%s.%s", routing.PauseKey, username)
+	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, pauseQueueName, routing.PauseKey, pubsub.Transient)
 
 	gameState := gamelogic.NewGameState(username)
 	for {
