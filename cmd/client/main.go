@@ -1,7 +1,7 @@
 package main
 
-import "os"
-import "os/signal"
+// import "os"
+// import "os/signal"
 import "fmt"
 import "log"
 import "github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
@@ -20,10 +20,41 @@ func main() {
 	}
 	fmt.Println("Connection successful!")
 	username, err := gamelogic.ClientWelcome()
+
+	// Create and bind queue
 	queueName := fmt.Sprintf("%s.%s", routing.PauseKey, username)
 	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, queueName, routing.PauseKey, pubsub.Transient)
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
+	gameState := gamelogic.NewGameState(username)
+	for {
+		words := gamelogic.GetInput()
+		if len(words) == 0 {
+			continue
+		}
+
+		switch words[0] {
+		case "spawn":
+			err := gameState.CommandSpawn(words)
+			if err != nil {
+				fmt.Println("Spawn was unsccessful")
+			}
+		case "move":
+			_, err := gameState.CommandMove(words)
+			if err != nil {
+				fmt.Println("Move was unsuccessful")
+			}
+		case "status":
+			gameState.CommandStatus()
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("Spam is not allowed yet!")
+		case "quit":
+			gamelogic.PrintQuit()
+			break
+		}
+	}
+	// signalChan := make(chan os.Signal, 1)
+	// signal.Notify(signalChan, os.Interrupt)
+	// <-signalChan
 }
