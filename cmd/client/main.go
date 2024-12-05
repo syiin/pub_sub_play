@@ -21,10 +21,22 @@ func main() {
 	fmt.Println("Connection successful!")
 	username, err := gamelogic.ClientWelcome()
 
+	channel, err := connection.Channel()
+	if err != nil {
+		log.Fatal("Could not open channel")
+	}
+
 	// Create and bind queue
 	pauseQueueName := fmt.Sprintf("%s.%s", routing.PauseKey, username)
-	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, pauseQueueName, routing.PauseKey, pubsub.Transient)
+	pubsub.DeclareAndBind(
+		connection,
+		routing.ExchangePerilDirect,
+		pauseQueueName,
+		routing.PauseKey,
+		pubsub.Transient,
+	)
 
+	// Pause
 	gameState := gamelogic.NewGameState(username)
 	pubsub.SubscribeJSON(
 		connection,
@@ -34,6 +46,17 @@ func main() {
 		pubsub.Transient,
 		handlerPause(gameState),
 	)
+
+	// Army Moves
+	pubsub.SubscribeJSON(
+		connection,
+		routing.ExchangePerilTopic,
+		"army_moves."+username,
+		"army_moves.*",
+		pubsub.Transient,
+		handlerMove(gameState),
+	)
+
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
@@ -47,9 +70,18 @@ func main() {
 				fmt.Println("Spawn was unsuccessful")
 			}
 		case "move":
-			_, err := gameState.CommandMove(words)
+			armyMove, err := gameState.CommandMove(words)
 			if err != nil {
 				fmt.Println("Move was unsuccessful")
+			}
+			err = pubsub.PublishJSON(
+				channel,
+				routing.ExchangePerilTopic,
+				"army_moves."+username,
+				armyMove,
+			)
+			if err != nil {
+				log.Printf("Could not publish: %v", err)
 			}
 		case "status":
 			gameState.CommandStatus()
@@ -68,7 +100,15 @@ func main() {
 }
 
 func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	defer fmt.Println(">")
-	return gs.HandlePause
+	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
+		gs.HandlePause(ps)
+	}
+}
 
+func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) {
+	return func(move gamelogic.ArmyMove) {
+		defer fmt.Print("> ")
+		gs.HandleMove(move)
+	}
 }
