@@ -126,12 +126,18 @@ func handlerMove(gs *gamelogic.GameState, channel *amqp.Channel) func(gamelogic.
 		case gamelogic.MoveOutComeSafe:
 			return pubsub.Ack
 		case gamelogic.MoveOutcomeMakeWar:
-			pubsub.PublishJSON(
+			err := pubsub.PublishJSON(
 				channel,
 				routing.ExchangePerilTopic,
-				routing.WarRecognitionsPrefix+"."+move.Player.Username,
-				"",
+				routing.WarRecognitionsPrefix+"."+gs.GetUsername(),
+				gamelogic.RecognitionOfWar{
+					Attacker: move.Player,
+					Defender: gs.GetPlayerSnap(),
+				},
 			)
+			if err != nil {
+				fmt.Println("Unknown move occurred")
+			}
 			return pubsub.NackRequeue
 		case gamelogic.MoveOutcomeSamePlayer:
 			return pubsub.NackDiscard
