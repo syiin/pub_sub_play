@@ -2,9 +2,18 @@ package pubsub
 
 import "context"
 import "fmt"
+import "log"
 import "encoding/json"
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+type AckType string
+
+const (
+	Ack         AckType = "Ack"
+	NackRequeue AckType = "NackRequeue"
+	NackDiscard AckType = "NackDiscard"
 )
 
 func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
@@ -22,7 +31,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	simpleQueueType int,
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 	channel, _, err := DeclareAndBind(
 		conn,
@@ -42,8 +51,18 @@ func SubscribeJSON[T any](
 		for msg := range deliveryChan {
 			var unmarshalled T
 			json.Unmarshal(msg.Body, &unmarshalled)
-			handler(unmarshalled)
-			msg.Ack(false)
+			returnedAck := handler(unmarshalled)
+			switch returnedAck {
+			case Ack:
+				msg.Ack(false)
+				log.Println("Ack called with", unmarshalled)
+			case NackRequeue:
+				msg.Nack(false, true)
+				log.Println("NackRequeue called with", unmarshalled)
+			case NackDiscard:
+				msg.Nack(false, false)
+				log.Println("NackDiscard called with", unmarshalled)
+			}
 		}
 	}()
 	return err
