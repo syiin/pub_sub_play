@@ -39,9 +39,18 @@ func DeclareAndBind(
 	default:
 		fmt.Println("Unknown simpleQueueType value:", simpleQueueType)
 	}
-	queue, err := channel.QueueDeclare(queueName, durable, autoDelete, exclusive, false, amqp.Table{})
+	table := amqp.Table{
+		"x-dead-letter-exchange": "peril_dlx",
+	}
+	queue, err := channel.QueueDeclare(
+		queueName,
+		durable,
+		autoDelete,
+		exclusive,
+		false,
+		table)
 	if err != nil {
-		log.Fatal("Could not declare queue")
+		log.Fatal("Could not declare queue", err)
 	}
 
 	err = channel.QueueBind(queueName, key, exchange, false, amqp.Table{})
