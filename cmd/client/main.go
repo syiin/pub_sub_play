@@ -38,7 +38,7 @@ func main() {
 
 	// Pause
 	gameState := gamelogic.NewGameState(username)
-	pubsub.SubscribeJSON(
+	err = pubsub.SubscribeJSON(
 		connection,
 		routing.ExchangePerilDirect,
 		pauseQueueName,
@@ -46,9 +46,12 @@ func main() {
 		pubsub.Transient,
 		handlerPause(gameState),
 	)
+	if err != nil {
+		log.Fatalf("Could not subscribe to army moves: %v", err)
+	}
 
 	// Army Moves
-	pubsub.SubscribeJSON(
+	err = pubsub.SubscribeJSON(
 		connection,
 		routing.ExchangePerilTopic,
 		"army_moves."+username,
@@ -57,8 +60,12 @@ func main() {
 		handlerMove(gameState, channel),
 	)
 
+	if err != nil {
+		log.Fatalf("Could not subscribe to army moves: %v", err)
+	}
+
 	// War
-	pubsub.SubscribeJSON(
+	err = pubsub.SubscribeJSON(
 		connection,
 		routing.ExchangePerilTopic,
 		"war",
@@ -66,6 +73,9 @@ func main() {
 		pubsub.Durable,
 		handlerWar(gameState),
 	)
+	if err != nil {
+		log.Fatalf("Could not subscribe to war declarations: %v", err)
+	}
 
 	for {
 		words := gamelogic.GetInput()
