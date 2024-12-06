@@ -54,7 +54,17 @@ func main() {
 		"army_moves."+username,
 		"army_moves.*",
 		pubsub.Transient,
-		handlerMove(gameState),
+		handlerMove(gameState, channel),
+	)
+
+	// War
+	pubsub.SubscribeJSON(
+		connection,
+		routing.ExchangePerilTopic,
+		"war",
+		"army_moves.*",
+		pubsub.Durable,
+		handlerWar(gameState),
 	)
 
 	for {
@@ -107,18 +117,48 @@ func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) pubsub.Ack
 	}
 }
 
-func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) pubsub.AckType {
+func handlerMove(gs *gamelogic.GameState, channel *amqp.Channel) func(gamelogic.ArmyMove) pubsub.AckType {
 	return func(move gamelogic.ArmyMove) pubsub.AckType {
 		defer fmt.Print("> ")
 		moveOutcome := gs.HandleMove(move)
+
 		switch moveOutcome {
 		case gamelogic.MoveOutComeSafe:
 			return pubsub.Ack
 		case gamelogic.MoveOutcomeMakeWar:
-			return pubsub.Ack
+			pubsub.PublishJSON(
+				channel,
+				routing.ExchangePerilTopic,
+				routing.WarRecognitionsPrefix+"."+move.Player.Username,
+				"",
+			)
+			return pubsub.NackRequeue
 		case gamelogic.MoveOutcomeSamePlayer:
 			return pubsub.NackDiscard
+		default:
+			return pubsub.NackDiscard
 		}
-		return pubsub.Ack
+	}
+}
+
+func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.AckType {
+	return func(rw gamelogic.RecognitionOfWar) pubsub.AckType {
+		defer fmt.Print("> ")
+		outcome, _, _ := gs.HandleWar(rw)
+		switch outcome {
+		case gamelogic.WarOutcomeNotInvolved:
+			return pubsub.NackRequeue
+		case gamelogic.WarOutcomeNoUnits:
+			return pubsub.NackDiscard
+		case gamelogic.WarOutcomeOpponentWon:
+			return pubsub.Ack
+		case gamelogic.WarOutcomeYouWon:
+			return pubsub.Ack
+		case gamelogic.WarOutcomeDraw:
+			return pubsub.Ack
+		default:
+			log.Fatal("Received bad war outcome", outcome)
+			return pubsub.NackDiscard
+		}
 	}
 }
