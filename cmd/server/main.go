@@ -42,7 +42,8 @@ func main() {
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
 		logKey,
-		pubsub.SimpleQueueDurable
+		pubsub.SimpleQueueDurable,
+		handlerGameLogs(),
 	)
 	for {
 		words := gamelogic.GetInput()
