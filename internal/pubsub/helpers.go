@@ -40,6 +40,7 @@ func subscribe[T any](
 	if err != nil {
 		fmt.Println("Channel not opened")
 	}
+	channel.Qos(10, 0, false)
 	deliveryChan, err := channel.Consume(queueName, "", false, false, false, false, nil)
 	if err != nil {
 		fmt.Println("Delivery channel cannot be opened")

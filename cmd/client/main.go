@@ -2,12 +2,15 @@ package main
 
 // import "os"
 // import "os/signal"
-import "fmt"
-import "log"
-import "github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
-import "github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
-import "github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 import (
+	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -108,7 +111,19 @@ func main() {
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			fmt.Println("Spam is not allowed yet!")
+			nSpam, err := strconv.Atoi(words[1])
+			if err != nil {
+				log.Printf("Could not convert string to int: %v", err)
+			}
+			for i := 0; i < nSpam; i++ {
+				badLog := gamelogic.GetMaliciousLog()
+				pubsub.PublishGob(
+					channel,
+					routing.ExchangePerilTopic,
+					"game_logs."+username,
+					badLog,
+				)
+			}
 		case "quit":
 			gamelogic.PrintQuit()
 			break
