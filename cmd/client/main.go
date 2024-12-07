@@ -33,7 +33,7 @@ func main() {
 		routing.ExchangePerilDirect,
 		pauseQueueName,
 		routing.PauseKey,
-		pubsub.Transient,
+		pubsub.SimpleQueueTransient,
 	)
 
 	// Pause
@@ -43,7 +43,7 @@ func main() {
 		routing.ExchangePerilDirect,
 		pauseQueueName,
 		routing.PauseKey,
-		pubsub.Transient,
+		pubsub.SimpleQueueTransient,
 		handlerPause(gameState),
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func main() {
 		routing.ExchangePerilTopic,
 		"army_moves."+username,
 		"army_moves.*",
-		pubsub.Transient,
+		pubsub.SimpleQueueTransient,
 		handlerMove(gameState, channel),
 	)
 
@@ -68,10 +68,10 @@ func main() {
 	err = pubsub.SubscribeJSON(
 		connection,
 		routing.ExchangePerilTopic,
-		"war",
-		"army_moves.*",
-		pubsub.Durable,
-		handlerWar(gameState),
+		routing.WarRecognitionsPrefix,
+		routing.WarRecognitionsPrefix+".*",
+		pubsub.SimpleQueueDurable,
+		handlerWar(gameState, channel),
 	)
 	if err != nil {
 		log.Fatalf("Could not subscribe to war declarations: %v", err)

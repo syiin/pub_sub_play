@@ -24,12 +24,26 @@ func main() {
 		log.Fatal("Could not open channel")
 	}
 
+	// Log
 	logKey := fmt.Sprintf("%s.%s", routing.GameLogSlug, "*")
-	_, _, err = pubsub.DeclareAndBind(connection, routing.ExchangePerilTopic, routing.GameLogSlug, logKey, pubsub.Durable)
+	_, _, err = pubsub.DeclareAndBind(
+		connection,
+		routing.ExchangePerilTopic,
+		routing.GameLogSlug,
+		logKey,
+		pubsub.SimpleQueueDurable)
 
 	if err != nil {
 		log.Fatal("Could not declare and bind log queue")
 	}
+
+	pubsub.SubscribeGob(
+		connection,
+		routing.ExchangePerilTopic,
+		routing.GameLogSlug,
+		logKey,
+		pubsub.SimpleQueueDurable
+	)
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {

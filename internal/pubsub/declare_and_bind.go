@@ -16,7 +16,7 @@ func DeclareAndBind(
 	exchange,
 	queueName,
 	key string,
-	simpleQueueType int, // an enum to represent "durable" or "transient"
+	simpleQueueType SimpleQueueType, // an enum to represent "durable" or "transient"
 ) (*amqp.Channel, amqp.Queue, error) {
 	channel, err := conn.Channel()
 	if err != nil {
@@ -26,12 +26,12 @@ func DeclareAndBind(
 	var durable, autoDelete, exclusive bool
 
 	switch simpleQueueType {
-	case Durable:
+	case SimpleQueueDurable:
 		log.Println("Durable...")
 		durable = true
 		autoDelete = false
 		exclusive = false
-	case Transient:
+	case SimpleQueueTransient:
 		log.Println("Transient...")
 		durable = false
 		autoDelete = true
